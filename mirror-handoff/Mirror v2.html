@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mirror v2</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,300..700;1,300..700&family=Instrument+Serif:ital@0;1&family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=Inter:wght@300..600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --font-serif: 'Crimson Pro', 'Times New Roman', serif;
+    --font-sans: 'Inter', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: oklch(0.97 0.008 80); color: #141C21; font-family: var(--font-sans); scroll-behavior: smooth; }
+  body { overflow-x: hidden; }
+  @keyframes profileFadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes messageFade { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes caret { 0%, 60% { opacity: 1; } 61%, 100% { opacity: 0; } }
+  @keyframes thinkingPulse { 0%, 100% { transform: scale(0.7); opacity: 0.3; } 50% { transform: scale(1); opacity: 1; } }
+  button:focus-visible, textarea:focus-visible { outline: 2px solid oklch(0.55 0.10 240); outline-offset: 2px; }
+  ::selection { background: oklch(0.82 0.06 230); color: #141C21; }
+  /* Main chat transcript — thin scrollbar (~#B9CEF4 family) */
+  .mirror-conv-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: #B9CEF4 transparent;
+  }
+  .mirror-conv-scroll::-webkit-scrollbar {
+    width: 7px;
+  }
+  .mirror-conv-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .mirror-conv-scroll::-webkit-scrollbar-thumb {
+    background: #B9CEF4;
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  .mirror-conv-scroll::-webkit-scrollbar-thumb:hover {
+    background: #A3BFEB;
+    background-clip: padding-box;
+  }
+  @media print { .no-print { display: none !important; } body { background: white !important; } }
+</style>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script src="src/tokens.jsx"></script>
+<script type="text/babel" src="src/tweaks.jsx"></script>
+<script type="text/babel" src="src/mirror-anthropic-shared.jsx"></script>
+<script type="text/babel" src="src/claude-client.jsx"></script>
+<script type="text/babel" src="src/landing.jsx"></script>
+<script type="text/babel" src="src/sidebar.v2.jsx"></script>
+<script type="text/babel" src="src/conversation.jsx"></script>
+<script type="text/babel" src="src/conversation.v2.jsx"></script>
+<script type="text/babel" src="src/results.v2.jsx"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+// Demo profile — uses observation-style language for v2
+const DEMO_PROFILE_V2 = {
+  essence: [
+    { text: "Jess performs pre-med for her parents and makes zines at 2am for herself.", confidence: 0.85 },
+  ],
+  values: [
+    { text: "Creative autonomy — came up unprompted, twice" },
+    { text: "Financial stability — acknowledged but not centered" },
+    { text: "Status — mentioned as something others want for her, not something she wants" },
+    { text: "Making tangible things — kept coming up with specifics" },
+  ],
+  workStyle: [
+    { text: "Said she loses track of time with hands-on work" },
+    { text: "Described rigid schedules as 'suffocating'" },
+    { text: "Prefers long solo stretches with small-team feedback" },
+  ],
+  interests: [
+    { text: "Zine-making — talked about layout for five minutes straight" },
+    { text: "Repairing her grandmother's sewing machine" },
+    { text: "Specific weights of denim, needle tension" },
+    { text: "Documentaries about 'small industries'" },
+  ],
+  social: [
+    { text: "Described herself as the quiet mediator at home" },
+    { text: "Preferred '2-3 close collaborators' to big groups" },
+    { text: "Said she's uncomfortable with 'selling herself'" },
+  ],
+  pressure: [
+    { text: "Used 'should' when describing med school. Used 'love' when describing her zines.", severity: "strong" },
+    { text: "Talked about her parents' expectations before talking about her own interests.", severity: "moderate" },
+  ],
+};
+
+const DEMO_RECS = {
+  summary: "You're someone who needs to make things with their hands, but has been quietly performing 'serious' because that's what love sounds like at home. The work that will fit you sits at the intersection of tactile craft and careful documentation — and you already do it, you just don't call it a career yet.",
+  careers: [
+    {
+      title: "Book Conservator",
+      oneLine: "Restores rare and historic books using hand tools, paper chemistry, and patient craft.",
+      why: "You told me the thing you lose track of time on is fixing your grandmother's sewing machine — small brass parts, patience, the feeling of returning something to working order. Book conservation is that instinct applied to paper. Museums and university libraries employ conservators full-time, and the field rewards exactly the quiet focus you described.",
+      salary: "$52k–$78k",
+      outlook: "Small field, steady demand. ~5% growth — slow but stable, with almost no layoff risk in institutional roles.",
+      aiRisk: "low — physical restoration requires human hands and judgment; AI may help with cataloging but cannot replace the craft.",
+      dayToDay: "Mornings in a climate-controlled lab, bent over a 17th-century manuscript. Afternoons mixing wheat-starch paste, testing fiber samples, writing treatment reports. Mostly solo, weekly team reviews.",
+      progression: "5 yr: senior conservator. 10 yr: lead conservator at a major library or private studio. 20 yr: private practice serving collectors, or department head.",
+      workLifeBalance: "Standard 9–5 in institutional roles. Lab-based, no remote. Low after-hours demand. Long, patient timelines.",
+      schools: "You mentioned wanting to stay within a day's drive of home — look at NYU's Conservation Center, Winterthur/U. Delaware, or Buffalo State. All three are top programs with stipended tracks.",
+      humanVoice: "The day I stopped trying to make conservation sexy for my family was the day I loved my job. They still don't quite get it. But the books do.",
+    },
+    {
+      title: "Medical Illustrator",
+      oneLine: "Creates precise illustrations of anatomy, surgery, and scientific processes for textbooks and training.",
+      why: "This is the career that pays attention to both your parents and you. You've been rehearsing medical vocabulary for a decade. Instead of performing it in a white coat, you'd be drawing it. Graduate-level field (Johns Hopkins is the flagship) but exactly the intersection of craft, science, and focused solo time you described.",
+      salary: "$70k–$110k",
+      outlook: "Niche but expanding with AR/VR medical training. ~10% growth.",
+      aiRisk: "medium — generative tools handle routine diagrams, but peer-reviewed and surgical-accuracy work still requires trained illustrators.",
+      dayToDay: "Reference-heavy mornings at the drawing tablet. Afternoons consulting with surgeons or researchers. Quarterly: observing real procedures.",
+      progression: "5 yr: staff illustrator at a medical publisher. 10 yr: senior freelance with repeat clients. 20 yr: own studio or teaching at a graduate program.",
+      workLifeBalance: "Mostly desk-based, hybrid after year two. 40–50 hour weeks with occasional deadline crunch. Remote-friendly once established.",
+      schools: "Johns Hopkins (Art as Applied to Medicine) is the flagship — two-year MA. Alternatives: UIC, U. Toronto, Augusta.",
+      humanVoice: "My mom stopped asking when I was going to 'finish med school' the first time she saw my work in a textbook. It wasn't the money that changed her mind. It was the word 'Hopkins' on my degree.",
+    },
+    {
+      title: "Textile Designer",
+      oneLine: "Designs woven, printed, and knitted fabrics for fashion, interiors, and industrial applications.",
+      why: "You didn't say the word 'textile' once — but you talked for five minutes about the sewing machine. About the exact weight of denim, how needle tension changes with thread. That's a designer's ear. Real industry, entry paths through RISD and FIT.",
+      salary: "$55k–$85k",
+      outlook: "Steady, with rising demand in sustainable and technical textiles.",
+      aiRisk: "medium — pattern generation is improving, but material knowledge and tactile judgment remain human.",
+      dayToDay: "CAD mornings, swatch-mixing afternoons. Factory visits monthly. Seasonal crunch around design calendars.",
+      progression: "5 yr: senior designer. 10 yr: creative director at a mid-size brand. 20 yr: own label or consulting studio.",
+      workLifeBalance: "Studio-based, 40–50 hours, seasonal crunch. Factory visits a few times a year. Remote rare entry-level, common later.",
+      schools: "RISD and FIT are canonical. Parsons for fashion-adjacent. If cost matters: NC State has a strong textile program at state tuition.",
+      humanVoice: "I draw something on Monday and hold it as cloth by Friday. Nothing else I've done has that feedback loop.",
+    },
+    {
+      title: "Science Journalism (long-form)",
+      oneLine: "Writes in-depth narrative stories about science, medicine, and research for magazines and book publishers.",
+      why: "You said you watch documentaries about small industries 'because someone cared enough to ask the weird questions.' That's the job description for a long-form journalist. You have the medical vocabulary, you love print as a medium, and patient attention is the temperament needed for a 10,000-word investigation.",
+      salary: "$48k–$95k (wide, freelance-heavy)",
+      outlook: "Consolidating, but strong long-form demand at The Atlantic, NYT Mag, and independent newsletters.",
+      aiRisk: "medium-high for daily news; low for investigative narrative.",
+      dayToDay: "Reporting trips, interview transcription, 6-month story arcs. Mostly solo with editor check-ins.",
+      progression: "5 yr: staff at a science desk. 10 yr: contributing editor at a major magazine. 20 yr: book deals, documentary consulting.",
+      workLifeBalance: "Heavily self-directed. Long independent stretches, reporting trips as needed. Remote-friendly. Freelance common — feast-or-famine early.",
+      schools: "MIT Graduate Program in Science Writing; NYU SHERP. General programs at Missouri, Northwestern, or Columbia also feed science desks.",
+      humanVoice: "The first piece I ever cared about was 6,000 words on a guy who repairs pipe organs. Eight years later that's still the bar I'm chasing.",
+    },
+  ],
+  obscure: [
+    {
+      title: "Paper Conservator at a National Archive",
+      oneLine: "A specialized branch of conservation focused on government documents, maps, and historic correspondence.",
+      why: "An even quieter version of book conservation. NARA and the Library of Congress hire conservators with stable federal benefits. You'd work on things like original Lincoln letters. Never advertised on LinkedIn but exists in every capital.",
+    },
+    {
+      title: "Orthotist / Prosthetist",
+      oneLine: "Designs and fabricates custom braces, limbs, and assistive devices for patients.",
+      why: "The craft version of medicine. You work with patients one-on-one, but the bulk of the job is workshop hours: molding, fitting, adjusting. Masters program, clinical residency, then steady $75k+ work. Addresses the medical pull without being med school.",
+    },
+  ],
+};
+
+function App() {
+  const { tweaks, setTweaks, editMode } = useTweaks();
+  const [screen, setScreen] = useState('landing');
+  const [profile, setProfile] = useState(EMPTY_PROFILE);
+  const [phase, setPhase] = useState(1);
+  const [recommendations, setRecommendations] = useState(null);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('mirrorV2:screen');
+    if (saved && ['landing', 'chat', 'results'].includes(saved)) {
+      setScreen(saved);
+      if (saved === 'results') {
+        setProfile(DEMO_PROFILE_V2);
+        setRecommendations(DEMO_RECS);
+        setPhase(3);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('mirrorV2:screen', screen);
+  }, [screen]);
+
+  const goToChat = () => { window.scrollTo(0, 0); setScreen('chat'); };
+  const goToResults = (recs) => { setRecommendations(recs); window.scrollTo(0, 0); setScreen('results'); };
+  const startOver = () => {
+    setProfile(EMPTY_PROFILE); setPhase(1); setRecommendations(null);
+    window.scrollTo(0, 0); setScreen('landing');
+  };
+  const demoSkipToResults = () => {
+    setProfile(DEMO_PROFILE_V2); setRecommendations(DEMO_RECS); setPhase(3);
+    window.scrollTo(0, 0); setScreen('results');
+  };
+
+  return (
+    <>
+      {screen === 'landing' && <LandingPage onBegin={goToChat} />}
+      {screen === 'chat' && (
+        <ConversationViewV2
+          profile={profile} setProfile={setProfile}
+          phase={phase} setPhase={setPhase}
+          onResults={goToResults}
+          sidebarVariant={tweaks.sidebar}
+          onGoBack={startOver}
+        />
+      )}
+      {screen === 'results' && (
+        <ResultsViewV2
+          recommendations={recommendations}
+          profile={profile}
+          onStartOver={startOver}
+          onBackToConversation={goToChat}
+          sidebarVariant={tweaks.sidebar}
+          density={tweaks.density}
+        />
+      )}
+
+      <DemoNavV2 screen={screen} onGoTo={(s) => {
+        if (s === 'results') demoSkipToResults();
+        else if (s === 'chat') goToChat();
+        else startOver();
+      }} />
+
+      <TweaksPanel tweaks={tweaks} setTweaks={setTweaks} visible={editMode} />
+    </>
+  );
+}
+
+function DemoNavV2({ screen, onGoTo }) {
+  const stages = [
+    { id: 'landing', label: 'Landing' },
+    { id: 'chat', label: 'Conversation' },
+    { id: 'results', label: 'Results (demo)' },
+  ];
+  return (
+    <div className="no-print" style={{
+      position: 'fixed', left: 20, bottom: 20, zIndex: 9998,
+      display: 'flex', gap: 4, padding: 4,
+      background: 'rgba(255,255,255,0.92)',
+      backdropFilter: 'blur(20px) saturate(1.4)',
+      WebkitBackdropFilter: 'blur(20px) saturate(1.4)',
+      border: '1px solid rgba(22,40,66,0.08)',
+      borderRadius: 999,
+      boxShadow: '0 12px 40px rgba(22,40,66,0.12)',
+      fontFamily: "'JetBrains Mono', monospace",
+      fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase',
+    }}>
+      <span style={{
+        padding: '8px 10px 8px 14px',
+        color: '#58666F',
+        fontWeight: 600,
+        display: 'flex', alignItems: 'center',
+      }}>v2</span>
+      {stages.map(s => (
+        <button key={s.id} onClick={() => onGoTo(s.id)} style={{
+          padding: '8px 14px', border: 'none',
+          background: screen === s.id ? 'oklch(0.22 0.015 240)' : 'transparent',
+          color: screen === s.id ? '#141C21' : '#58666F',
+          borderRadius: 999, cursor: 'pointer',
+          fontFamily: 'inherit', fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase',
+        }}>{s.label}</button>
+      ))}
+      <a href="Mirror.html" style={{
+        padding: '8px 14px', borderRadius: 999,
+        color: '#58666F', textDecoration: 'none',
+        fontFamily: 'inherit', fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase',
+        display: 'flex', alignItems: 'center',
+        marginLeft: 4, paddingLeft: 14,
+      }}>← v1</a>
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+</script>
+</body>
+</html>

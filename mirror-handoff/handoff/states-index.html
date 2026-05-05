@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mirror — All States</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,300..700;1,300..700&family=Instrument+Serif:ital@0;1&family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=Inter:wght@300..600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --font-serif: 'Crimson Pro', 'Times New Roman', serif;
+    --font-sans: 'Inter', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #eeece6; font-family: var(--font-sans); color: #222; }
+  @keyframes profileFadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes messageFade { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes caret { 0%, 60% { opacity: 1; } 61%, 100% { opacity: 0; } }
+  @keyframes thinkingPulse { 0%, 100% { transform: scale(0.7); opacity: 0.3; } 50% { transform: scale(1); opacity: 1; } }
+  .page { max-width: 1800px; margin: 0 auto; padding: 48px; }
+  .page-header { margin-bottom: 48px; }
+  .page-header h1 { font-family: var(--font-serif); font-size: 48px; font-weight: 400; margin: 0 0 8px; letter-spacing: -0.02em; }
+  .page-header p { color: #666; font-size: 14px; margin: 0; max-width: 640px; line-height: 1.6; }
+  .state { margin-bottom: 80px; }
+  .state-meta { margin-bottom: 16px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #444; display: flex; gap: 16px; align-items: baseline; }
+  .state-meta b { color: #111; font-weight: 600; }
+  .state-meta span { color: #888; }
+  .artboard { background: white; border: 1px solid #d8d5cc; box-shadow: 0 2px 8px rgba(0,0,0,0.04); overflow: hidden; position: relative; }
+  .artboard-desktop { width: 1440px; height: 900px; }
+  .artboard-desktop-tall { width: 1440px; height: 1400px; }
+  .artboard-modal { width: 1440px; height: 900px; }
+  .frame-scroll { width: 100%; height: 100%; overflow: hidden; }
+</style>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script src="../src/tokens.jsx"></script>
+<script type="text/babel" src="../src/mirror-anthropic-shared.jsx"></script>
+<script type="text/babel" src="../src/claude-client.jsx"></script>
+<script type="text/babel" src="../src/landing.jsx"></script>
+<script type="text/babel" src="../src/sidebar.jsx"></script>
+<script type="text/babel" src="../src/sidebar.v2.jsx"></script>
+<script type="text/babel" src="../src/conversation.jsx"></script>
+<script type="text/babel" src="../src/conversation.v2.jsx"></script>
+<script type="text/babel" src="../src/results.jsx"></script>
+<script type="text/babel" src="../src/results.v2.jsx"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState } = React;
+
+// At render time we read from window.* so script-ordering doesn't matter.
+const W = window;
+
+// Defensive: some external <script type="text/babel" src> blocks occasionally
+// fail to auto-execute in this environment. Re-fetch + eval anything missing.
+async function ensureLoaded() {
+  const needed = [
+    ['MirrorAnthropic', '../src/mirror-anthropic-shared.jsx'],
+    ['LandingPage', '../src/landing.jsx'],
+    ['ConversationView', '../src/conversation.jsx'],
+    ['ConversationViewV2', '../src/conversation.v2.jsx'],
+    ['ResultsView', '../src/results.jsx'],
+    ['ResultsViewV2', '../src/results.v2.jsx'],
+    ['CareerDetailModal', '../src/results.v2.jsx'],
+    ['EMPTY_PROFILE', '../src/conversation.jsx'],
+  ];
+  for (const [name, path] of needed) {
+    if (typeof window[name] !== 'undefined') continue;
+    const src = await fetch(path).then(r => r.text());
+    const { code } = Babel.transform(src, { presets: ['react'] });
+    new Function(code).call(window);
+  }
+}
+
+const DEMO_PROFILE = {
+  essence: [{ text: "Jess performs pre-med for her parents and makes zines at 2am for herself.", confidence: 0.85 }],
+  values: [
+    { text: "Creative autonomy — came up unprompted, twice" },
+    { text: "Financial stability — acknowledged but not centered" },
+    { text: "Status — mentioned as something others want for her, not something she wants" },
+    { text: "Making tangible things — kept coming up with specifics" },
+  ],
+  workStyle: [
+    { text: "Said she loses track of time with hands-on work" },
+    { text: "Described rigid schedules as 'suffocating'" },
+    { text: "Prefers long solo stretches with small-team feedback" },
+  ],
+  interests: [
+    { text: "Zine-making — talked about layout for five minutes straight" },
+    { text: "Repairing her grandmother's sewing machine" },
+    { text: "Specific weights of denim, needle tension" },
+    { text: "Documentaries about 'small industries'" },
+  ],
+  social: [
+    { text: "Described herself as the quiet mediator at home" },
+    { text: "Preferred '2-3 close collaborators' to big groups" },
+    { text: "Said she's uncomfortable with 'selling herself'" },
+  ],
+  pressure: [
+    { text: "Used 'should' when describing med school. Used 'love' when describing her zines.", severity: "strong" },
+    { text: "Talked about her parents' expectations before talking about her own interests.", severity: "moderate" },
+  ],
+};
+
+const DEMO_RECS = {
+  summary: "You're someone who needs to make things with their hands, but has been quietly performing 'serious' because that's what love sounds like at home. The work that will fit you sits at the intersection of tactile craft and careful documentation — and you already do it, you just don't call it a career yet.",
+  careers: [
+    { title: "Book Conservator", oneLine: "Restores rare and historic books using hand tools, paper chemistry, and patient craft.", why: "You told me the thing you lose track of time on is fixing your grandmother's sewing machine — small brass parts, patience, the feeling of returning something to working order. Book conservation is that instinct applied to paper.", salary: "$52k–$78k", outlook: "Small field, steady demand. ~5% growth — slow but stable, with almost no layoff risk in institutional roles.", aiRisk: "low — physical restoration requires human hands and judgment; AI may help with cataloging but cannot replace the craft.", dayToDay: "Mornings in a climate-controlled lab, bent over a 17th-century manuscript. Afternoons mixing wheat-starch paste, testing fiber samples.", progression: "5 yr: senior conservator. 10 yr: lead at a major library. 20 yr: private practice or department head.", workLifeBalance: "Standard 9–5 in institutional roles. Lab-based, no remote. Low after-hours demand.", schools: "NYU Conservation Center, Winterthur/U. Delaware, Buffalo State.", humanVoice: "The day I stopped trying to make conservation sexy for my family was the day I loved my job." },
+    { title: "Medical Illustrator", oneLine: "Creates precise illustrations of anatomy, surgery, and scientific processes for textbooks and training.", why: "This is the career that pays attention to both your parents and you. You've been rehearsing medical vocabulary for a decade. Instead of performing it in a white coat, you'd be drawing it.", salary: "$70k–$110k", outlook: "Niche but expanding with AR/VR medical training. ~10% growth.", aiRisk: "medium — generative tools handle routine diagrams, but peer-reviewed and surgical-accuracy work still requires trained illustrators.", dayToDay: "Reference-heavy mornings at the drawing tablet. Afternoons consulting with surgeons or researchers.", progression: "5 yr: staff illustrator. 10 yr: senior freelance. 20 yr: own studio or teaching.", workLifeBalance: "Mostly desk-based, hybrid after year two. 40–50 hour weeks.", schools: "Johns Hopkins (Art as Applied to Medicine). UIC, U. Toronto, Augusta.", humanVoice: "My mom stopped asking when I was going to finish med school the first time she saw my work in a textbook." },
+    { title: "Textile Designer", oneLine: "Designs woven, printed, and knitted fabrics for fashion, interiors, and industrial applications.", why: "You didn't say the word 'textile' once — but you talked for five minutes about the sewing machine. About the exact weight of denim, how needle tension changes with thread. That's a designer's ear.", salary: "$55k–$85k", outlook: "Steady, with rising demand in sustainable and technical textiles.", aiRisk: "medium — pattern generation is improving, but material knowledge remains human.", dayToDay: "CAD mornings, swatch-mixing afternoons. Factory visits monthly.", progression: "5 yr: senior designer. 10 yr: creative director. 20 yr: own label.", workLifeBalance: "Studio-based, 40–50 hours, seasonal crunch.", schools: "RISD, FIT, Parsons. NC State at state tuition.", humanVoice: "I draw something on Monday and hold it as cloth by Friday." },
+    { title: "Science Journalism", oneLine: "Writes in-depth narrative stories about science, medicine, and research for magazines and book publishers.", why: "You said you watch documentaries about small industries 'because someone cared enough to ask the weird questions.' That's the job description for a long-form journalist.", salary: "$48k–$95k (freelance-heavy)", outlook: "Consolidating, but strong long-form demand at The Atlantic, NYT Mag.", aiRisk: "medium-high for daily news; low for investigative narrative.", dayToDay: "Reporting trips, interview transcription, 6-month story arcs.", progression: "5 yr: staff. 10 yr: contributing editor. 20 yr: book deals.", workLifeBalance: "Heavily self-directed. Remote-friendly. Freelance common — feast-or-famine early.", schools: "MIT Graduate Program in Science Writing; NYU SHERP.", humanVoice: "The first piece I ever cared about was 6,000 words on a guy who repairs pipe organs." },
+  ],
+  obscure: [
+    { title: "Paper Conservator at a National Archive", oneLine: "A specialized branch of conservation focused on government documents, maps, and historic correspondence.", why: "An even quieter version of book conservation. NARA and the Library of Congress hire conservators with stable federal benefits." },
+    { title: "Orthotist / Prosthetist", oneLine: "Designs and fabricates custom braces, limbs, and assistive devices for patients.", why: "The craft version of medicine. One-on-one with patients, but the bulk is workshop hours." },
+  ],
+};
+
+const STATES = [
+  { id: 'landing', version: 'shared', title: 'Landing', height: 900, render: () => <W.LandingPage onBegin={() => {}} /> },
+  { id: 'conv-v1-empty', version: 'v1', title: 'Conversation · empty', height: 900, render: () => (
+      <W.ConversationView profile={W.EMPTY_PROFILE} setProfile={() => {}} phase={1} setPhase={() => {}} onResults={() => {}} sidebarVariant="structured" onGoBack={() => {}} />
+    ) },
+  { id: 'conv-v2-empty', version: 'v2', title: 'Conversation · empty', height: 900, render: () => (
+      <W.ConversationViewV2 profile={W.EMPTY_PROFILE} setProfile={() => {}} phase={1} setPhase={() => {}} onResults={() => {}} sidebarVariant="structured" onGoBack={() => {}} />
+    ) },
+  { id: 'conv-v2-poetic', version: 'v2', title: 'Conversation · poetic sidebar', height: 900, render: () => (
+      <W.ConversationViewV2 profile={DEMO_PROFILE} setProfile={() => {}} phase={2} setPhase={() => {}} onResults={() => {}} sidebarVariant="poetic" onGoBack={() => {}} />
+    ) },
+  { id: 'results-v1', version: 'v1', title: 'Results', height: 2400, render: () => (
+      <W.ResultsView recommendations={DEMO_RECS} profile={DEMO_PROFILE} onStartOver={() => {}} sidebarVariant="structured" />
+    ) },
+  { id: 'results-v2-standard', version: 'v2', title: 'Results · standard density', height: 2800, render: () => (
+      <W.ResultsViewV2 recommendations={DEMO_RECS} profile={DEMO_PROFILE} onStartOver={() => {}} sidebarVariant="structured" density="standard" />
+    ) },
+  { id: 'results-v2-minimal', version: 'v2', title: 'Results · minimal density', height: 2400, render: () => (
+      <W.ResultsViewV2 recommendations={DEMO_RECS} profile={DEMO_PROFILE} onStartOver={() => {}} sidebarVariant="structured" density="minimal" />
+    ) },
+  { id: 'modal-v2', version: 'v2', title: 'Career detail modal', height: 900, render: () => (
+      <ModalPreview />
+    ) },
+];
+
+function ModalPreview() {
+  return (
+    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      <div style={{ transform: 'translateY(-400px)' }}>
+        <W.ResultsViewV2 recommendations={DEMO_RECS} profile={DEMO_PROFILE} onStartOver={() => {}} sidebarVariant="structured" density="standard" />
+      </div>
+      <W.CareerDetailModal career={DEMO_RECS.careers[0]} index={0} onClose={() => {}} />
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <div className="page">
+      <div className="page-header">
+        <h1>Mirror — Every State</h1>
+        <p>Every screen and variant, desktop 1440×. Captured for handoff to Figma (MCP) or manual reconstruction. Tokens live in <code>tokens.md</code>.</p>
+      </div>
+
+      {STATES.map(s => (
+        <div key={s.id} className="state">
+          <div className="state-meta">
+            <b>{s.title}</b>
+            <span>· {s.version}</span>
+            <span>· {s.id}</span>
+          </div>
+          <div className="artboard" style={{ width: 1440, height: s.height }}>
+            <div className="frame-scroll">
+      { s.render() }
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+ensureLoaded().then(() => {
+  // Optional single-state rendering via URL hash, e.g. #only=landing
+  const m = location.hash.match(/only=([^&]+)/);
+  if (m) {
+    const onlyId = decodeURIComponent(m[1]);
+    const state = STATES.find(s => s.id === onlyId);
+    if (state) {
+      document.body.style.margin = '0';
+      document.body.style.background = '#fff';
+      document.getElementById('root').innerHTML = '';
+      const host = document.createElement('div');
+      host.style.cssText = 'width:1440px;height:' + state.height + 'px;overflow:hidden;background:#fff;';
+      document.getElementById('root').appendChild(host);
+      ReactDOM.createRoot(host).render(state.render());
+      return;
+    }
+  }
+  root.render(<App />);
+}).catch(e => {
+  document.getElementById('root').innerText = 'Load error: ' + e.message;
+});
+</script>
+</body>
+</html>

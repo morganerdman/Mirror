@@ -1,0 +1,15 @@
+{
+  "name": "mirror",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node server/mirror-dev-server.mjs",
+    "api": "node server/mirror-dev-server.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "react-markdown": "^10.1.0"
+  }
+}
