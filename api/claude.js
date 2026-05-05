@@ -1,28 +1,3 @@
-let groundingFns = null;
-let groundingAttempted = false;
-
-async function getGroundingFns() {
-  if (groundingAttempted) return groundingFns;
-  groundingAttempted = true;
-  try {
-    const mod = await import('../server/source-grounding.mjs');
-    if (
-      typeof mod.buildLiveGrounding === 'function' &&
-      typeof mod.buildGroundingAppendix === 'function' &&
-      typeof mod.injectSourcesIntoProfileUpdate === 'function'
-    ) {
-      groundingFns = {
-        buildLiveGrounding: mod.buildLiveGrounding,
-        buildGroundingAppendix: mod.buildGroundingAppendix,
-        injectSourcesIntoProfileUpdate: mod.injectSourcesIntoProfileUpdate,
-      };
-    }
-  } catch {
-    groundingFns = null;
-  }
-  return groundingFns;
-}
-
 function setCors(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
@@ -65,19 +40,6 @@ export default async function handler(req, res) {
     return;
   }
 
-  let finalSystem = system;
-  let grounding = null;
-  const fns = await getGroundingFns();
-  if (fns) {
-    try {
-      grounding = await fns.buildLiveGrounding({ system, messages });
-      finalSystem = system + fns.buildGroundingAppendix(grounding);
-    } catch {
-      grounding = null;
-      finalSystem = system;
-    }
-  }
-
   try {
     const upstream = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -89,7 +51,7 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model,
         max_tokens: 8192,
-        system: finalSystem,
+        system,
         messages,
       }),
     });
@@ -112,14 +74,6 @@ export default async function handler(req, res) {
     let text = asText(parsed?.content);
     if (!text && typeof parsed?.completion === 'string') {
       text = parsed.completion;
-    }
-
-    if (fns && grounding && text) {
-      try {
-        text = fns.injectSourcesIntoProfileUpdate(text, grounding);
-      } catch {
-        // Fall back to raw text when enrichment fails.
-      }
     }
 
     res.status(200).json({ text });
