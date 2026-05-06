@@ -51,7 +51,19 @@ function LandingPage({ onBegin }) {
   const parallax = Math.min(scrollY * 0.3, 200);
 
   return (
-    <div style={{ background: '#F8FBFF', color: '#141C21', minHeight: '100vh' }}>
+    <div style={{ background: '#F8FBFF', color: '#141C21', minHeight: '100vh', position: 'relative' }}>
+      {/* Fixed page background image */}
+      <div aria-hidden="true" style={{
+        position: 'fixed',
+        inset: 0,
+        backgroundImage: 'url("assets/hero-saltflats.jpeg")',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center 60%',
+        opacity: 0.25,
+        zIndex: 0,
+        pointerEvents: 'none',
+      }}/>
+      <div style={{ position: 'relative', zIndex: 1 }}>
       {/* Hero */}
       <section style={{
         position: 'relative',
@@ -61,20 +73,6 @@ function LandingPage({ onBegin }) {
         display: 'flex',
         flexDirection: 'column',
       }}>
-        {/* Background image with subtle parallax */}
-        <div style={{
-          position: 'absolute', inset: 0,
-          backgroundImage: `url("assets/hero-saltflats.jpeg")`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center 50%',
-          opacity: 0.5,
-        }}/>
-        {/* Subtle top-bottom tone */}
-        <div style={{
-          position: 'absolute', inset: 0,
-          background: 'linear-gradient(180deg, rgba(255,255,255,0.0) 0%, rgba(255,255,255,0.0) 55%, rgba(245,250,255,0.35) 100%)',
-        }}/>
-
         {/* Top hairline + tiny wordmark */}
         <div style={{
           position: 'relative', zIndex: 2,
@@ -215,6 +213,7 @@ function LandingPage({ onBegin }) {
         <span>© 2026 Mirror</span>
         <span>Anonymous · No accounts · 30-day session</span>
       </footer>
+      </div>
     </div>
   );
 }
