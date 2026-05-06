@@ -153,10 +153,12 @@ function PoeticSidebarV2({ profile, totalMessages }) {
       }}>In your own words, mostly.</div>
 
       {allEntries.length === 0 ? (
-        <p style={{
-          fontFamily: 'var(--font-serif)', fontStyle: 'italic',
-          fontSize: 16, lineHeight: 1.6, color: '#58666F',
-        }}>Still listening. Things will show up here as we talk.</p>
+        <div style={{
+          fontSize: 14, fontStyle: 'italic',
+          color: '#58666F',
+          padding: '4px 0',
+          fontFamily: 'var(--font-serif)',
+        }}>(listening)</div>
       ) : (
         <div style={{
           fontFamily: 'var(--font-serif)',

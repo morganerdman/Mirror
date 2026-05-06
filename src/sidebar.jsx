@@ -72,10 +72,11 @@ function StructuredSidebar({ profile, totalMessages }) {
 
           {cat.entries.length === 0 ? (
             <div style={{
-              fontSize: 12, fontStyle: 'italic',
+              fontSize: 14, fontStyle: 'italic',
               color: '#58666F',
-              padding: '6px 0',
-            }}>—</div>
+              padding: '4px 0',
+              fontFamily: 'var(--font-serif)',
+            }}>(listening)</div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {cat.entries.map((e, i) => (
@@ -132,10 +133,12 @@ function PoeticSidebar({ profile, totalMessages }) {
       }}>In your own words</div>
 
       {allEntries.length === 0 ? (
-        <p style={{
-          fontFamily: 'var(--font-serif)', fontStyle: 'italic',
-          fontSize: 17, lineHeight: 1.6, color: '#58666F',
-        }}>The page is blank. Talk to me, and it fills.</p>
+        <div style={{
+          fontSize: 14, fontStyle: 'italic',
+          color: '#58666F',
+          padding: '4px 0',
+          fontFamily: 'var(--font-serif)',
+        }}>(listening)</div>
       ) : (
         <div style={{
           fontFamily: 'var(--font-serif)',
