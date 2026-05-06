@@ -48,7 +48,7 @@ function StructuredSidebarV2({ profile, totalMessages, onEdit }) {
   ];
 
   return (
-    <div className="mirror-conv-scroll" style={{
+    <div style={{
       fontFamily: 'Lato', color: '#141C21',
       padding: '36px 28px 80px', height: '100%', overflowY: 'auto',
     }}>
@@ -137,7 +137,7 @@ function PoeticSidebarV2({ profile, totalMessages }) {
   ];
 
   return (
-    <div className="mirror-conv-scroll" style={{
+    <div style={{
       fontFamily: 'Lato, sans-serif', color: '#141C21',
       padding: '36px 32px 80px', height: '100%', overflowY: 'auto',
       background: 'transparent',

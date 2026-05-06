@@ -61,6 +61,41 @@ function sourcesForCareer(career) {
   return base;
 }
 
+/** Stat chip: dollar range only (no parentheticals or notes after `;`). */
+function displaySalaryRange(salary) {
+  if (salary == null || salary === '') return '';
+  let s = String(salary).trim();
+  const paren = s.indexOf('(');
+  if (paren !== -1) s = s.slice(0, paren).trim();
+  const semi = s.indexOf(';');
+  if (semi !== -1) s = s.slice(0, semi).trim();
+  return s;
+}
+
+/** Stat chip: exactly low | medium | high from model text (first clause only). */
+function displayAiRiskBucket(raw) {
+  const head = (raw || '').split(/[;—–]/)[0].trim().toLowerCase();
+  if (!head) return '';
+  if (/medium[-\u2013\s]*high/.test(head)) return 'high';
+  if (/medium[-\u2013\s]*low/.test(head)) return 'medium';
+  const m = head.match(/^([a-z]+(?:-[a-z]+)?)/);
+  const first = m ? m[1] : '';
+  if (first.startsWith('low')) return 'low';
+  if (first.startsWith('high')) return 'high';
+  if (first.startsWith('medium')) return 'medium';
+  if (/\bhigh\b/.test(head)) return 'high';
+  if (/\bmedium\b/.test(head)) return 'medium';
+  if (/\blow\b/.test(head)) return 'low';
+  return '';
+}
+
+function aiRiskColorForBucket(bucket) {
+  const b = (bucket || '').toLowerCase();
+  if (b === 'low') return 'oklch(0.55 0.12 145)';
+  if (b === 'high') return 'oklch(0.55 0.12 30)';
+  return 'oklch(0.58 0.10 60)';
+}
+
 const TIER_STYLES = {
   structured: {
     bg: 'oklch(0.95 0.04 145)',
@@ -477,11 +512,8 @@ function CareerCardV2({ career, index, density, onOpen }) {
   const [sourcesOpen, setSourcesOpen] = useStateRes2(false);
   const [hover, setHover] = useStateRes2(false);
 
-  const aiRiskLevel = (career.aiRisk || '').split('—')[0].trim().toLowerCase();
-  const aiRiskColor =
-    aiRiskLevel.startsWith('low') ? 'oklch(0.55 0.12 145)' :
-    aiRiskLevel.startsWith('high') ? 'oklch(0.55 0.12 30)' :
-    'oklch(0.58 0.10 60)';
+  const aiRiskBucket = displayAiRiskBucket(career.aiRisk);
+  const aiRiskColor = aiRiskColorForBucket(aiRiskBucket);
 
   const compact = density === 'minimal';
 
@@ -508,23 +540,19 @@ function CareerCardV2({ career, index, density, onOpen }) {
           : 'inset 0 1px 0 rgba(255,255,255,0.52), inset 0 -1px 0 rgba(255,255,255,0.10), 0 8px 18px rgba(22,40,66,0.08)',
         transform: hover ? 'translateY(-2px)' : 'none',
         position: 'relative',
+        /* Popover extends below the card; backdrop-filter makes a stacking context, so lift this tile while open so it paints above the next grid row. */
+        zIndex: sourcesOpen ? 30 : 0,
         outline: 'none',
         backdropFilter: 'blur(14px) saturate(125%)',
         WebkitBackdropFilter: 'blur(14px) saturate(125%)',
         overflow: 'visible',
       }}>
 
-      {/* Header row: candidate index + sources trigger */}
+      {/* Header row: sources trigger */}
       <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        marginBottom: 14,
+        display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
+        marginBottom: 10,
       }}>
-        <span style={{
-          fontFamily: "'Lato', sans-serif",
-          fontSize: 9, letterSpacing: '0.25em', textTransform: 'uppercase',
-          color: '#58666F',
-        }}>Candidate · {String(index + 1).padStart(2, '0')}</span>
-
         <button
           onMouseEnter={() => setSourcesOpen(true)}
           onMouseLeave={() => setSourcesOpen(false)}
@@ -553,7 +581,7 @@ function CareerCardV2({ career, index, density, onOpen }) {
         fontFamily: 'var(--font-serif)',
         fontSize: compact ? 24 : 30, fontWeight: 400,
         letterSpacing: '-0.01em', lineHeight: 1.15,
-        margin: '0 0 10px',
+        margin: '0 0 8px',
         color: '#141C21',
       }}>{career.title}</h3>
 
@@ -564,9 +592,9 @@ function CareerCardV2({ career, index, density, onOpen }) {
 
       {/* Stat chips */}
       {!compact && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 18 }}>
-          <StatChip label="Salary" value={career.salary} />
-          <StatChip label="AI risk" value={aiRiskLevel || 'n/a'} valueColor={aiRiskColor} />
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
+          <StatChip label="Salary" value={displaySalaryRange(career.salary)} />
+          <StatChip label="AI risk" value={aiRiskBucket || 'n/a'} valueColor={aiRiskColor} />
         </div>
       )}
 
@@ -576,7 +604,7 @@ function CareerCardV2({ career, index, density, onOpen }) {
         background: 'transparent',
         border: '1px solid #B9CEF4',
         borderRadius: 12,
-        marginBottom: 16,
+        marginBottom: 0,
       }}>
         <div style={{
           fontFamily: "'Lato', sans-serif",
@@ -597,69 +625,12 @@ function CareerCardV2({ career, index, density, onOpen }) {
 
 // -------- Detail modal --------
 function CareerDetailModal({ career, index, onClose }) {
-  const [tab, setTab] = useStateRes2('reality');
   const [sourcesOpen, setSourcesOpen] = useStateRes2(false);
-  const measureRefs = useRefRes2({ reality: null, trajectory: null, path: null });
-  const MIN_TAB_PANEL_HEIGHT = 280;
-  const [maxTabHeight, setMaxTabHeight] = useStateRes2(MIN_TAB_PANEL_HEIGHT);
 
-  const aiRiskLevel = (career.aiRisk || '').split('—')[0].trim().toLowerCase();
-  const aiRiskColor =
-    aiRiskLevel.startsWith('low') ? 'oklch(0.55 0.12 145)' :
-    aiRiskLevel.startsWith('high') ? 'oklch(0.55 0.12 30)' :
-    'oklch(0.58 0.10 60)';
+  const aiRiskBucket = displayAiRiskBucket(career.aiRisk);
+  const aiRiskColor = aiRiskColorForBucket(aiRiskBucket);
 
-  useEffectRes2(() => {
-    function measureTallestTab() {
-      const heights = ['reality', 'trajectory', 'path'].map((key) => {
-        const el = measureRefs.current[key];
-        return el ? el.scrollHeight : 0;
-      });
-      const tallest = Math.max(...heights, 0);
-      if (tallest > 0) setMaxTabHeight(tallest);
-    }
-
-    measureTallestTab();
-    window.addEventListener('resize', measureTallestTab);
-    return () => window.removeEventListener('resize', measureTallestTab);
-  }, [career, tab]);
-
-  function renderTabPanel(panelId) {
-    if (panelId === 'reality') {
-      return (
-        <div>
-          <DetailBlock label="A typical day" sourceTag="onet">{career.dayToDay}</DetailBlock>
-          <DetailBlock label="Work–life balance" sourceTag="glassdoor">{career.workLifeBalance}</DetailBlock>
-          {career.humanVoice && (
-            <DetailBlock label="Someone in this field, on the record" sourceTag="interviews">
-              <span style={{ fontStyle: 'italic' }}>&ldquo;{career.humanVoice}&rdquo;</span>
-            </DetailBlock>
-          )}
-        </div>
-      );
-    }
-
-    if (panelId === 'trajectory') {
-      return (
-        <div>
-          <DetailBlock label="How the field is moving" sourceTag="bls">{career.outlook}</DetailBlock>
-          <DetailBlock label="AI risk, honestly" sourceTag="linkedin">{career.aiRisk}</DetailBlock>
-          <DetailBlock label="5 / 10 / 20 years out" sourceTag="linkedin">{career.progression}</DetailBlock>
-        </div>
-      );
-    }
-
-    return (
-      <div>
-        <DetailBlock label="Programs to look at" sourceTag="aaas">{career.schools}</DetailBlock>
-        <p style={{
-          fontSize: 13, lineHeight: 1.55, color: '#58666F',
-          marginTop: 20, fontStyle: 'italic',
-          fontFamily: 'var(--font-serif)',
-        }}>This is a starting list. Talk to a school counselor or an admissions officer before committing — they'll know current cycles and funding better than I do.</p>
-      </div>
-    );
-  }
+  const whatThisActuallyLooksLike = career.whatThisActuallyLooksLike || buildLegacyLooksLikeFallback(career);
 
   return (
     <div
@@ -767,8 +738,8 @@ function CareerDetailModal({ career, index, onClose }) {
           }}>{career.oneLine}</p>
 
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            <StatChip label="Salary" value={career.salary} />
-            <StatChip label="AI risk" value={aiRiskLevel || 'n/a'} valueColor={aiRiskColor} />
+            <StatChip label="Salary" value={displaySalaryRange(career.salary)} />
+            <StatChip label="AI risk" value={aiRiskBucket || 'n/a'} valueColor={aiRiskColor} />
           </div>
         </div>
 
@@ -794,61 +765,31 @@ function CareerDetailModal({ career, index, onClose }) {
           </div>
         </div>
 
-        {/* Tabs */}
-        <div style={{ padding: '20px 36px 8px' }}>
-          <div style={{
-            display: 'flex', gap: 2,
-            padding: 3,
-            background: 'transparent',
-            border: '1px solid #B9CEF4',
-            borderRadius: 999,
-            fontFamily: "'Lato', sans-serif",
-            fontSize: 9, letterSpacing: '0.2em', textTransform: 'uppercase',
-          }}>
-            {[
-              { id: 'reality', label: 'The reality' },
-              { id: 'trajectory', label: 'Trajectory' },
-              { id: 'path', label: 'Getting in' },
-            ].map(t => (
-              <button key={t.id} onClick={() => setTab(t.id)} style={{
-                flex: 1,
-                padding: '10px 12px',
-                background: 'transparent',
-                border: '1px solid #B9CEF4', borderRadius: 999,
-                fontFamily: 'inherit', fontSize: 'inherit', letterSpacing: 'inherit', textTransform: 'inherit',
-                color: tab === t.id ? '#141C21' : '#58666F',
-                cursor: 'pointer',
-              }}>{t.label}</button>
-            ))}
-          </div>
-        </div>
-
-        {/* Hidden measurement layer to size by tallest tab */}
-        <div aria-hidden="true" style={{
-          position: 'absolute',
-          inset: 0,
-          visibility: 'hidden',
-          pointerEvents: 'none',
-          zIndex: -1,
-          overflow: 'hidden',
-        }}>
-          <div style={{ padding: '20px 36px 36px' }}>
-            <div ref={(el) => { measureRefs.current.reality = el; }}>{renderTabPanel('reality')}</div>
-            <div ref={(el) => { measureRefs.current.trajectory = el; }}>{renderTabPanel('trajectory')}</div>
-            <div ref={(el) => { measureRefs.current.path = el; }}>{renderTabPanel('path')}</div>
-          </div>
-        </div>
-
-        {/* Tab content */}
-        <div style={{ padding: '20px 36px 36px', height: `${Math.max(maxTabHeight, MIN_TAB_PANEL_HEIGHT)}px`, overflowY: 'auto' }}>
-          {renderTabPanel(tab)}
+        {/* What this actually looks like */}
+        <div style={{ padding: '20px 36px 36px' }}>
+          <DetailBlock label="What this actually looks like">
+            <div style={{ whiteSpace: 'pre-line' }}>{whatThisActuallyLooksLike}</div>
+          </DetailBlock>
+          {career.humanVoice && (
+            <DetailBlock label="Someone in this field, on the record">
+              <span style={{ fontStyle: 'italic' }}>&ldquo;{career.humanVoice}&rdquo;</span>
+            </DetailBlock>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-
+function buildLegacyLooksLikeFallback(career) {
+  const lines = [
+    career.dayToDay,
+    career.schools ? `How people get in: ${career.schools}` : '',
+    career.workLifeBalance ? `Lifestyle reality: ${career.workLifeBalance}` : '',
+    career.progression ? `Counterintuitive truth: ${career.progression}` : (career.outlook ? `Counterintuitive truth: ${career.outlook}` : ''),
+  ].filter(Boolean);
+  return lines.slice(0, 4).join('\n');
+}
 
 function StatChip({ label, value, valueColor }) {
   return (
@@ -872,9 +813,7 @@ function StatChip({ label, value, valueColor }) {
   );
 }
 
-function DetailBlock({ label, sourceTag, children }) {
-  const src = SOURCE_LIBRARY[sourceTag];
-  const tierStyle = src ? TIER_STYLES[src.tier] : null;
+function DetailBlock({ label, children }) {
   return (
     <div style={{
       marginBottom: 18,
@@ -884,7 +823,6 @@ function DetailBlock({ label, sourceTag, children }) {
       borderRadius: 12,
     }}>
       <div style={{
-        display: 'flex', alignItems: 'center', gap: 10,
         marginBottom: 8,
       }}>
         <div style={{
@@ -892,22 +830,6 @@ function DetailBlock({ label, sourceTag, children }) {
           fontSize: 9, letterSpacing: '0.22em', textTransform: 'uppercase',
           color: '#58666F',
         }}>{label}</div>
-        {tierStyle && (
-          <span style={{
-            display: 'inline-flex', alignItems: 'center', gap: 5,
-            padding: '2px 8px',
-            background: 'transparent',
-            border: '1px solid #B9CEF4',
-            color: '#58666F',
-            borderRadius: 999,
-            fontFamily: "'Lato', sans-serif",
-            fontSize: 8, letterSpacing: '0.18em', textTransform: 'uppercase',
-          }}
-          title={`${src.label}. ${src.reason}`}>
-            <span style={{ width: 5, height: 5, borderRadius: '50%', background: tierStyle.dot }}/>
-            {tierStyle.label}
-          </span>
-        )}
       </div>
       <div style={{
         fontSize: 14, lineHeight: 1.6,

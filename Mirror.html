@@ -15,7 +15,29 @@
     --font-sans: 'Lato', system-ui, sans-serif;
     --font-mono: 'Lato', sans-serif;
   }
-  * { box-sizing: border-box; }
+  /* Global scrollbars — same look as chat everywhere */
+  * {
+    box-sizing: border-box;
+    scrollbar-width: thin;
+    scrollbar-color: #B9CEF4 transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 7px;
+    height: 7px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: #B9CEF4;
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: #A3BFEB;
+    background-clip: padding-box;
+  }
   html, body { margin: 0; padding: 0; background: oklch(0.97 0.008 80); color: #141C21; font-family: var(--font-sans); scroll-behavior: smooth; }
   body { overflow-x: hidden; }
   @keyframes profileFadeIn {
@@ -36,28 +58,6 @@
   }
   button:focus-visible, textarea:focus-visible { outline: 2px solid oklch(0.55 0.10 240); outline-offset: 2px; }
   ::selection { background: oklch(0.82 0.06 230); color: #141C21; }
-
-  /* Main chat transcript — thin scrollbar (~#B9CEF4 family) */
-  .mirror-conv-scroll {
-    scrollbar-width: thin;
-    scrollbar-color: #B9CEF4 transparent;
-  }
-  .mirror-conv-scroll::-webkit-scrollbar {
-    width: 7px;
-  }
-  .mirror-conv-scroll::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  .mirror-conv-scroll::-webkit-scrollbar-thumb {
-    background: #B9CEF4;
-    border-radius: 999px;
-    border: 2px solid transparent;
-    background-clip: padding-box;
-  }
-  .mirror-conv-scroll::-webkit-scrollbar-thumb:hover {
-    background: #A3BFEB;
-    background-clip: padding-box;
-  }
 
   /* Skip link for demo */
   .demo-shortcut {

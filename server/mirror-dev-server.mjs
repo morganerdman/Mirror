@@ -34,7 +34,11 @@ const MIME = {
 
 function safeJoin(root, pathname) {
   let rel = decodeURIComponent(String(pathname || '')).replace(/^\/+/, '').split('?')[0];
-  if (!rel) rel = 'Mirror v2.html';
+  if (!rel) {
+    const v2 = path.join(root, 'Mirror v2.html');
+    const idx = path.join(root, 'index.html');
+    rel = fs.existsSync(v2) ? 'Mirror v2.html' : fs.existsSync(idx) ? 'index.html' : 'Mirror v2.html';
+  }
   const resolved = path.resolve(root, rel);
   const rootResolved = path.resolve(root);
   if (!resolved.startsWith(rootResolved + path.sep) && resolved !== rootResolved) {
@@ -151,7 +155,12 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, '127.0.0.1', () => {
-  console.log(`Mirror dev: http://127.0.0.1:${PORT}/Mirror%20v2.html`);
+  const defaultEntry = fs.existsSync(path.join(ROOT, 'Mirror v2.html'))
+    ? 'Mirror%20v2.html'
+    : fs.existsSync(path.join(ROOT, 'index.html'))
+      ? ''
+      : 'Mirror%20v2.html';
+  console.log(`Mirror dev: http://127.0.0.1:${PORT}/${defaultEntry}`);
   console.log(`API proxy: POST http://127.0.0.1:${PORT}/api/claude (model: ${MODEL})`);
   if (!API_KEY) console.warn('Warning: ANTHROPIC_API_KEY not set — /api/claude will error until set.');
 });

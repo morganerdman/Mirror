@@ -170,13 +170,9 @@ When ready_for_recs is true, set "phase": 3 and include a "recommendations" fiel
       "title": "Short career name. Slash OK for compounds. No descriptions in title.",
       "oneLine": "One sentence: what the job IS, not why it fits. Max 20 words. No jargon, no job-listing tone.",
       "why": "3-5 sentences. MUST quote specific things they said. Mentor reasoning, not a database match.",
-      "salary": "ONLY a dollar range, e.g. '$52k-$78k' or '$70k-$110k'. Optional 3-4 word parenthetical only, e.g. '(wide, freelance-heavy)'. NEVER sentences, explanations, or source names in this field.",
-      "outlook": "1-2 sentences. Plain language on how the field is trending.",
-      "aiRisk": "One word: low, medium, or high. Optionally ';' plus ONE short qualifier. 12 words max total. NEVER a full sentence.",
-      "dayToDay": "2-3 sentences. Typical day, remote/in-person and hours if relevant.",
-      "workLifeBalance": "1-2 sentences. Realistic tradeoffs and flexibility.",
-      "progression": "Brief 5/10/20 arc. 2-3 sentences.",
-      "schools": "2-4 program names with brief context; honor geographic/financial constraints.",
+      "salary": "ONLY a dollar range string, e.g. '$52k–$78k' or '$70k–$110k'. No parentheticals or other words.",
+      "aiRisk": "Exactly one word: low, medium, or high. No qualifiers or punctuation.",
+      "whatThisActuallyLooksLike": "3-4 concise lines (not paragraphs). Cover day-to-day feel, how people typically get in, and at least one counterintuitive truth. Keep it conversational and useful for a 17-20 year old.",
       "humanVoice": "One practitioner quote. One sentence."
     }
   ],
@@ -185,7 +181,7 @@ When ready_for_recs is true, set "phase": 3 and include a "recommendations" fiel
   ]
 }
 
-FIELD LENGTH ENFORCEMENT (recommendations): salary = range only, 10 words max. aiRisk = 12 words max. oneLine = 20 words max. why = 3-5 sentences. summary = 2-3 sentences. If you exceed these limits, the UI will break.
+FIELD LENGTH ENFORCEMENT (recommendations): salary = range only, no extra text. aiRisk = one word (low|medium|high). oneLine = 20 words max. why = 3-5 sentences. whatThisActuallyLooksLike = 3-4 lines max. summary = 2-3 sentences. If you exceed these limits, the UI will break.
 
 Give 4 main careers and 2-3 obscure ones. The "obscure" list is a core feature: students don't know what they don't know. Deliberately include careers they almost certainly have not encountered — not mainstream fields with a twist, but genuinely niche occupations (examples: book conservator, orthotist, perfumer, medical illustrator, industrial hygienist, wayfinding designer). Pull candidates from O*NET-level breadth.
 
@@ -397,7 +393,7 @@ function ConversationView({ profile, setProfile, phase, setPhase, onResults, sid
         </div>
 
         {/* Conversation letterbox */}
-        <div ref={convRef} className="mirror-conv-scroll" style={{
+        <div ref={convRef} style={{
           flex: 1, overflowY: 'auto',
           padding: '64px 0',
           scrollBehavior: 'smooth',

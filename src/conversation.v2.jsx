@@ -89,15 +89,11 @@ CAREER OBJECT FORMAT (strict):
 {
   "title": "Short career name. Can use slash for compounds: 'Documentary Filmmaker / Cinematographer'. No descriptions here.",
   "oneLine": "One sentence. What the job IS, not why it fits. Max 20 words.",
-  "salary": "ONLY a dollar range. Examples: '$52k-$78k', '$70k-$110k'. A 3-4 word parenthetical is acceptable: '$48k-$95k (wide, freelance-heavy)'. NEVER write sentences, explanations, or source references in this field. NEVER mention BLS. If you write more than a range and an optional short parenthetical, you have failed this instruction.",
-  "aiRisk": "One word: 'low', 'medium', or 'high'. Optionally followed by a semicolon and ONE short qualifier clause. Example: 'medium-high for text journalism; lower for visual/field work'. NEVER a full sentence.",
+  "salary": "ONLY a dollar range string, nothing else. Examples: '$52k–$78k', '$70k–$110k'. No parentheticals, no words after the range, no source names. NEVER mention BLS.",
+  "aiRisk": "Exactly one word: 'low', 'medium', or 'high' only. No semicolons, qualifiers, or sentences. Put nuance in whatThisActuallyLooksLike or sources if needed.",
   "why": "3-5 sentences. Conversational. MUST quote specific things the user said during the conversation. Connect their words to why this career fits. This is the emotional core of the card.",
-  "outlook": "1-2 sentences. Plain language on how the field is trending.",
-  "dayToDay": "2-3 sentences. What a typical day looks like.",
-  "workLifeBalance": "1-2 sentences.",
+  "whatThisActuallyLooksLike": "3-4 concise lines (not paragraphs). Cover day-to-day feel, how people typically get in, and at least one counterintuitive truth. Keep it conversational and useful for a 17-20 year old.",
   "humanVoice": "One quote from a practitioner. One sentence.",
-  "progression": "Brief 5/10/20 year arc. 2-3 sentences.",
-  "schools": "2-4 program names with brief context. Respect stated geographic/financial constraints.",
   "sources": [array of source objects with id, label, url, tier, reason]
 }
 
@@ -109,15 +105,16 @@ OBSCURE CAREER OBJECT FORMAT (strict):
 }
 
 FIELD LENGTH ENFORCEMENT:
-- salary: dollar range ONLY. 10 words max. No sentences.
-- aiRisk: 12 words max.
+- salary: dollar range ONLY (e.g. '$48k–$95k'). No extra text.
+- aiRisk: one word only: low | medium | high.
 - oneLine: 20 words max.
 - why: 3-5 sentences.
+- whatThisActuallyLooksLike: 3-4 lines max.
 - summary: 2-3 sentences.
 If you exceed these limits, the UI will break.
 
 GROUNDING RULES FOR RECOMMENDATIONS:
-- If LIVE_SOURCE_GROUNDING is present, use only those grounded facts for salary/outlook/task claims. Still obey FIELD LENGTH ENFORCEMENT: salary must remain a compact range string only; put dataset names, URLs, and explanations in sources (and outlook/dayToDay where appropriate), never inside salary.
+- If LIVE_SOURCE_GROUNDING is present, use only those grounded facts for salary and job-reality claims. Still obey FIELD LENGTH ENFORCEMENT: salary must remain a compact range string only; put dataset names, URLs, and explanations in sources (and whatThisActuallyLooksLike where appropriate), never inside salary.
 - Never invent numeric salary or growth values when grounding is missing.
 - If grounding is degraded, state uncertainty in prose and keep recommendations conservative.
 
@@ -274,7 +271,7 @@ function ConversationViewV2({ profile, setProfile, phase, setPhase, onResults, s
 
         </div>
 
-        <div ref={convRef} className="mirror-conv-scroll" style={{
+        <div ref={convRef} style={{
           flex: 1, overflowY: 'auto',
           padding: '64px 0',
           scrollBehavior: 'smooth',
