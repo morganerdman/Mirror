@@ -241,7 +241,7 @@ function ConversationViewV2({ profile, setProfile, phase, setPhase, onResults, s
       isolation: 'isolate',
     }}>
       <div aria-hidden="true" style={{
-        position: 'absolute', inset: 0,
+        position: 'fixed', inset: 0,
         backgroundImage: 'url("assets/hero-saltflats.jpeg")',
         backgroundSize: 'cover',
         backgroundPosition: 'center 60%',

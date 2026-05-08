@@ -188,8 +188,12 @@ Give 4 main careers and 2-3 obscure ones. The "obscure" list is a core feature: 
 Keep conversation messages to 2-3 short paragraphs max. The JSON block is invisible to the user; write it after a blank line. Never acknowledge the JSON block in your conversational text.`;
 
 function parseMirrorResponse(raw) {
-  const match = raw.match(/<profile_update>([\s\S]*?)<\/profile_update>/);
-  let visible = raw.replace(/<profile_update>[\s\S]*?<\/profile_update>/g, '').trim();
+  let cleaned = String(raw || '');
+  cleaned = cleaned.replace(/<thinking[\s\S]*?<\/thinking>/gi, '');
+  cleaned = cleaned.replace(/<thinking[\s\S]*$/i, '');
+
+  const match = cleaned.match(/<profile_update>([\s\S]*?)<\/profile_update>/);
+  let visible = cleaned.replace(/<profile_update>[\s\S]*?<\/profile_update>/g, '').trim();
   let profileDelta = null;
   if (match) {
     try {
@@ -341,7 +345,7 @@ function ConversationView({ profile, setProfile, phase, setPhase, onResults, sid
     }}>
       {/* Salt-flats wash, same image as landing, low opacity */}
       <div aria-hidden="true" style={{
-        position: 'absolute', inset: 0,
+        position: 'fixed', inset: 0,
         backgroundImage: 'url("assets/hero-saltflats.jpeg")',
         backgroundSize: 'cover',
         backgroundPosition: 'center 60%',

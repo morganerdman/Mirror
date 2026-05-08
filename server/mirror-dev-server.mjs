@@ -89,7 +89,10 @@ async function proxyClaude(body) {
       .filter((c) => c.type === 'text')
       .map((c) => c.text)
       .join('') || '';
-  return text;
+  const stripped = text
+    .replace(/<thinking[\s\S]*?<\/thinking>/gi, '')
+    .replace(/<thinking[\s\S]*$/i, '');
+  return stripped;
 }
 
 const server = http.createServer(async (req, res) => {

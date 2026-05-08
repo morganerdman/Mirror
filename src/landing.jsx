@@ -34,6 +34,17 @@ function LandingPage({ onBegin }) {
   const [noteVisible, setNoteVisible] = useStateLanding(false);
 
   useEffectLanding(() => {
+    const prevBodyBg = document.body.style.background;
+    const prevHtmlBg = document.documentElement.style.background;
+    document.body.style.background = 'transparent';
+    document.documentElement.style.background = 'transparent';
+    return () => {
+      document.body.style.background = prevBodyBg;
+      document.documentElement.style.background = prevHtmlBg;
+    };
+  }, []);
+
+  useEffectLanding(() => {
     const onScroll = () => setScrollY(window.scrollY);
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
@@ -51,7 +62,7 @@ function LandingPage({ onBegin }) {
   const parallax = Math.min(scrollY * 0.3, 200);
 
   return (
-    <div style={{ background: '#F8FBFF', color: '#141C21', minHeight: '100vh', position: 'relative' }}>
+    <div style={{ background: 'transparent', color: '#141C21', minHeight: '100vh', position: 'relative' }}>
       {/* Fixed page background image */}
       <div aria-hidden="true" style={{
         position: 'fixed',

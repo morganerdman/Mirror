@@ -111,7 +111,11 @@ async function run() {
     }
     const text = payload.text || '';
     const profileCheck = parseProfileUpdate(text);
-    const visible = text.replace(/<profile_update>[\s\S]*?<\/profile_update>/g, '').trim();
+    const visible = text
+      .replace(/<thinking[\s\S]*?<\/thinking>/gi, '')
+      .replace(/<thinking[\s\S]*$/i, '')
+      .replace(/<profile_update>[\s\S]*?<\/profile_update>/g, '')
+      .trim();
     const expectPass = hasAny(visible, t.expectAny);
     const rejectPass = t.rejectAny.length ? !hasAny(visible, t.rejectAny) : true;
     const phasePass = profileCheck.ok && Number(profileCheck.phase) >= previousPhase;
