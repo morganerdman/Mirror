@@ -492,7 +492,7 @@ function ConversationView({ profile, setProfile, phase, setPhase, onResults, sid
                   marginBottom: 12,
                 }}>Mirror</div>
                 <div style={{ display: 'flex', gap: 6, alignItems: 'center', height: 30 }}>
-                  <ThinkingPulse />
+                  <ThinkingPulse label={isBuildingProfile(phase, messages) ? 'Building your profile' : null} />
                 </div>
               </div>
             )}
@@ -615,14 +615,36 @@ function IconButton({ children, label, onClick }) {
   );
 }
 
-function ThinkingPulse() {
+function ThinkingPulse({ label }) {
   return (
-    <div style={{
-      width: 8, height: 8, borderRadius: '50%',
-      background: 'oklch(0.55 0.10 240)',
-      animation: 'thinkingPulse 1.4s ease-in-out infinite',
-    }}/>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <div style={{
+        width: 8, height: 8, borderRadius: '50%',
+        background: 'oklch(0.55 0.10 240)',
+        animation: 'thinkingPulse 1.4s ease-in-out infinite',
+      }}/>
+      {label && (
+        <span style={{
+          fontFamily: 'var(--font-serif)',
+          fontStyle: 'italic',
+          fontSize: 16,
+          color: '#58666F',
+          letterSpacing: '-0.005em',
+        }}>{label}</span>
+      )}
+    </div>
   );
 }
 
-Object.assign(window, { ConversationView, EMPTY_PROFILE, mergeProfile, parseMirrorResponse });
+function isBuildingProfile(phase, messages) {
+  if (Number(phase) >= 3) return true;
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i].role === 'assistant') {
+      const t = String(messages[i].content || '').toLowerCase();
+      return /have enough|put (?:something|it) together|let me show you|ready to put|last (?:one|question)/.test(t);
+    }
+  }
+  return false;
+}
+
+Object.assign(window, { ConversationView, EMPTY_PROFILE, mergeProfile, parseMirrorResponse, isBuildingProfile });

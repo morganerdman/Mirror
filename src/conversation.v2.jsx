@@ -337,12 +337,21 @@ function ConversationViewV2({ profile, setProfile, phase, setPhase, onResults, s
                   fontSize: 9, letterSpacing: '0.3em', textTransform: 'uppercase',
                   color: '#58666F', marginBottom: 12,
                 }}>Mirror</div>
-                <div style={{ display: 'flex', gap: 6, alignItems: 'center', height: 30 }}>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center', height: 30 }}>
                   <div style={{
                     width: 8, height: 8, borderRadius: '50%',
                     background: 'oklch(0.55 0.10 240)',
                     animation: 'thinkingPulse 1.4s ease-in-out infinite',
                   }}/>
+                  {isBuildingProfile(phase, messages) && (
+                    <span style={{
+                      fontFamily: 'var(--font-serif)',
+                      fontStyle: 'italic',
+                      fontSize: 16,
+                      color: '#58666F',
+                      letterSpacing: '-0.005em',
+                    }}>Building your profile</span>
+                  )}
                 </div>
               </div>
             )}
