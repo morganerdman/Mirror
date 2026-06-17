@@ -70,113 +70,6 @@
 <script type="text/babel">
 const { useState, useEffect } = React;
 
-// Demo profile — uses observation-style language for v2
-const DEMO_PROFILE_V2 = {
-  essence: [
-    { text: "Jess performs pre-med for her parents and makes zines at 2am for herself.", confidence: 0.85 },
-  ],
-  values: [
-    { text: "Creative autonomy — came up unprompted, twice" },
-    { text: "Financial stability — acknowledged but not centered" },
-    { text: "Status — mentioned as something others want for her, not something she wants" },
-    { text: "Making tangible things — kept coming up with specifics" },
-  ],
-  workStyle: [
-    { text: "Said she loses track of time with hands-on work" },
-    { text: "Described rigid schedules as 'suffocating'" },
-    { text: "Prefers long solo stretches with small-team feedback" },
-  ],
-  interests: [
-    { text: "Zine-making — talked about layout for five minutes straight" },
-    { text: "Repairing her grandmother's sewing machine" },
-    { text: "Specific weights of denim, needle tension" },
-    { text: "Documentaries about 'small industries'" },
-  ],
-  social: [
-    { text: "Described herself as the quiet mediator at home" },
-    { text: "Preferred '2-3 close collaborators' to big groups" },
-    { text: "Said she's uncomfortable with 'selling herself'" },
-  ],
-  pressure: [
-    { text: "Used 'should' when describing med school. Used 'love' when describing her zines.", severity: "strong" },
-    { text: "Talked about her parents' expectations before talking about her own interests.", severity: "moderate" },
-  ],
-};
-
-const DEMO_RECS = {
-  summary: "You're someone who needs to make things with their hands, but has been quietly performing 'serious' because that's what love sounds like at home. The work that will fit you sits at the intersection of tactile craft and careful documentation — and you already do it, you just don't call it a career yet.",
-  careers: [
-    {
-      title: "Book Conservator",
-      oneLine: "Restores rare and historic books using hand tools, paper chemistry, and patient craft.",
-      why: "You told me the thing you lose track of time on is fixing your grandmother's sewing machine — small brass parts, patience, the feeling of returning something to working order. Book conservation is that instinct applied to paper. Museums and university libraries employ conservators full-time, and the field rewards exactly the quiet focus you described.",
-      salary: "$52k–$78k",
-      outlook: "Small field, steady demand. ~5% growth — slow but stable, with almost no layoff risk in institutional roles.",
-      aiRisk: "low",
-      dayToDay: "Mornings in a climate-controlled lab, bent over a 17th-century manuscript. Afternoons mixing wheat-starch paste, testing fiber samples, writing treatment reports. Mostly solo, weekly team reviews.",
-      progression: "5 yr: senior conservator. 10 yr: lead conservator at a major library or private studio. 20 yr: private practice serving collectors, or department head.",
-      workLifeBalance: "Standard 9–5 in institutional roles. Lab-based, no remote. Low after-hours demand. Long, patient timelines.",
-      schools: "You mentioned wanting to stay within a day's drive of home — look at NYU's Conservation Center, Winterthur/U. Delaware, or Buffalo State. All three are top programs with stipended tracks.",
-      whatThisActuallyLooksLike: "Most days you're at a bench with gloves on, working on something older than your grandparents.\nPeople get in through conservation programs and apprenticeships — not a flashy LinkedIn pipeline.\nThe counterintuitive part: it's slow work that rewards people who like being wrong in tiny increments until it's right.",
-      humanVoice: "The day I stopped trying to make conservation sexy for my family was the day I loved my job. They still don't quite get it. But the books do.",
-    },
-    {
-      title: "Medical Illustrator",
-      oneLine: "Creates precise illustrations of anatomy, surgery, and scientific processes for textbooks and training.",
-      why: "This is the career that pays attention to both your parents and you. You've been rehearsing medical vocabulary for a decade. Instead of performing it in a white coat, you'd be drawing it. Graduate-level field (Johns Hopkins is the flagship) but exactly the intersection of craft, science, and focused solo time you described.",
-      salary: "$70k–$110k",
-      outlook: "Niche but expanding with AR/VR medical training. ~10% growth.",
-      aiRisk: "medium",
-      dayToDay: "Reference-heavy mornings at the drawing tablet. Afternoons consulting with surgeons or researchers. Quarterly: observing real procedures.",
-      progression: "5 yr: staff illustrator at a medical publisher. 10 yr: senior freelance with repeat clients. 20 yr: own studio or teaching at a graduate program.",
-      workLifeBalance: "Mostly desk-based, hybrid after year two. 40–50 hour weeks with occasional deadline crunch. Remote-friendly once established.",
-      schools: "Johns Hopkins (Art as Applied to Medicine) is the flagship — two-year MA. Alternatives: UIC, U. Toronto, Augusta.",
-      whatThisActuallyLooksLike: "Heavy reference work: anatomy books, surgeons' notes, and a lot of quiet hours at a tablet.\nMany illustrators train through specialized grad programs, then land in medical publishing, device companies, or freelance for textbooks.\nCounterintuitive: it's half artist, half translator — you're making complexity legible, not 'drawing pretty pictures.'",
-      humanVoice: "My mom stopped asking when I was going to 'finish med school' the first time she saw my work in a textbook. It wasn't the money that changed her mind. It was the word 'Hopkins' on my degree.",
-    },
-    {
-      title: "Textile Designer",
-      oneLine: "Designs woven, printed, and knitted fabrics for fashion, interiors, and industrial applications.",
-      why: "You didn't say the word 'textile' once — but you talked for five minutes about the sewing machine. About the exact weight of denim, how needle tension changes with thread. That's a designer's ear. Real industry, entry paths through RISD and FIT.",
-      salary: "$55k–$85k",
-      outlook: "Steady, with rising demand in sustainable and technical textiles.",
-      aiRisk: "medium",
-      dayToDay: "CAD mornings, swatch-mixing afternoons. Factory visits monthly. Seasonal crunch around design calendars.",
-      progression: "5 yr: senior designer. 10 yr: creative director at a mid-size brand. 20 yr: own label or consulting studio.",
-      workLifeBalance: "Studio-based, 40–50 hours, seasonal crunch. Factory visits a few times a year. Remote rare entry-level, common later.",
-      schools: "RISD and FIT are canonical. Parsons for fashion-adjacent. If cost matters: NC State has a strong textile program at state tuition.",
-      whatThisActuallyLooksLike: "Swatches, CAD, and factory visits — you're translating a feeling in your head into something manufacturable.\nPaths in often start with a portfolio school or an assistant role on a product team, not a single 'apply here' ladder.\nCounterintuitive: the job can look fashion-y from the outside, but a lot of it is materials science with taste.",
-      humanVoice: "I draw something on Monday and hold it as cloth by Friday. Nothing else I've done has that feedback loop.",
-    },
-    {
-      title: "Science Journalism (long-form)",
-      oneLine: "Writes in-depth narrative stories about science, medicine, and research for magazines and book publishers.",
-      why: "You said you watch documentaries about small industries 'because someone cared enough to ask the weird questions.' That's the job description for a long-form journalist. You have the medical vocabulary, you love print as a medium, and patient attention is the temperament needed for a 10,000-word investigation.",
-      salary: "$48k–$95k",
-      outlook: "Consolidating, but strong long-form demand at The Atlantic, NYT Mag, and independent newsletters.",
-      aiRisk: "high",
-      dayToDay: "Reporting trips, interview transcription, 6-month story arcs. Mostly solo with editor check-ins.",
-      progression: "5 yr: staff at a science desk. 10 yr: contributing editor at a major magazine. 20 yr: book deals, documentary consulting.",
-      workLifeBalance: "Heavily self-directed. Long independent stretches, reporting trips as needed. Remote-friendly. Freelance common — feast-or-famine early.",
-      schools: "MIT Graduate Program in Science Writing; NYU SHERP. General programs at Missouri, Northwestern, or Columbia also feed science desks.",
-      whatThisActuallyLooksLike: "Long stretches alone with notes, transcripts, and a messy outline nobody else will see.\nPeople break in through clips, internships, and pitching — credibility builds project by project.\nCounterintuitive: the 'writing' is maybe 30% of it; the rest is reporting, cutting, and living with uncertainty.",
-      humanVoice: "The first piece I ever cared about was 6,000 words on a guy who repairs pipe organs. Eight years later that's still the bar I'm chasing.",
-    },
-  ],
-  obscure: [
-    {
-      title: "Paper Conservator at a National Archive",
-      oneLine: "A specialized branch of conservation focused on government documents, maps, and historic correspondence.",
-      why: "An even quieter version of book conservation. NARA and the Library of Congress hire conservators with stable federal benefits. You'd work on things like original Lincoln letters. Never advertised on LinkedIn but exists in every capital.",
-    },
-    {
-      title: "Orthotist / Prosthetist",
-      oneLine: "Designs and fabricates custom braces, limbs, and assistive devices for patients.",
-      why: "The craft version of medicine. You work with patients one-on-one, but the bulk of the job is workshop hours: molding, fitting, adjusting. Masters program, clinical residency, then steady $75k+ work. Addresses the medical pull without being med school.",
-    },
-  ],
-};
-
 function App() {
   const { tweaks, setTweaks, editMode } = useTweaks();
   const [screen, setScreen] = useState('landing');
@@ -207,15 +100,6 @@ function App() {
     window.scrollTo(0, 0); setScreen('landing');
   };
 
-  /** Temporary: jump to results with demo data for UI editing (remove before ship). */
-  const devPreviewResults = () => {
-    setProfile(DEMO_PROFILE_V2);
-    setRecommendations(DEMO_RECS);
-    setPhase(3);
-    window.scrollTo(0, 0);
-    setScreen('results');
-  };
-
   return (
     <>
       {screen === 'landing' && <LandingPage onBegin={goToChat} />}
@@ -240,34 +124,6 @@ function App() {
       )}
 
       <TweaksPanel tweaks={tweaks} setTweaks={setTweaks} visible={editMode} />
-
-      <button
-        type="button"
-        className="no-print"
-        onClick={devPreviewResults}
-        aria-label="Dev only: open results view with sample data"
-        style={{
-          position: 'fixed',
-          right: 16,
-          bottom: 16,
-          zIndex: 9997,
-          padding: '8px 12px',
-          borderRadius: 8,
-          border: '1px solid oklch(0.85 0.01 240)',
-          background: 'rgba(255,255,255,0.94)',
-          backdropFilter: 'blur(12px)',
-          WebkitBackdropFilter: 'blur(12px)',
-          fontFamily: "'Lato', sans-serif",
-          fontSize: 10,
-          letterSpacing: '0.12em',
-          textTransform: 'uppercase',
-          color: '#58666F',
-          cursor: 'pointer',
-          boxShadow: '0 8px 24px rgba(22,40,66,0.10)',
-        }}
-      >
-        Dev · Results preview
-      </button>
     </>
   );
 }
